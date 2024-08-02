@@ -1,0 +1,142 @@
+#! /bin/bash
+#
+#Contact author: email to dengqiang@phytium.com.cn
+#
+export PLATFORM
+export PLATFORM_FLAVOR
+export DEBUG
+export CFG_TEE_CORE_LOG_LEVEL
+
+HOST_ARCH=$(echo $(arch))
+
+function help ()
+{
+	echo "Usage:"
+	echo " "$0" [board] <option> <option> <option>"
+	echo " "$0" clean"
+	echo
+	echo "support boards:"
+	echo "e2000qdemo/e2000ddemo/phytiumpi/rk3568/rk3588/rk3399"
+	echo
+	echo "Options:"
+	echo " d,   Debug mode"
+	echo " c,   make Clean first"
+	echo " l,   output build Log info to console"
+	echo " f,   output build log info to 'make.log' File"
+}
+
+function build ()
+{
+	echo "start build optee os"
+
+	if [ "$BUILD_OPTION_D" = "y" ];then
+		DEBUG=1
+		CFG_TEE_CORE_LOG_LEVEL=4
+	fi
+
+	if [ "$HOST_ARCH" = "aarch64" ];then
+		HOST_CROSS=
+	else
+		HOST_CROSS=aarch64-openeuler-linux-gnu-
+	fi
+
+	if [ $CROSS_COMPILE64 ];then
+		HOST_CROSS=$CROSS_COMPILE64
+	fi
+
+	if [ "$BUILD_OPTION_C" = "y" ];then
+		make ARCH=arm CROSS_COMPILE64=$HOST_CROSS CFG_ARM64_core=y CFG_USER_TA_TARGETS=ta_arm64 clean >> /dev/null
+	fi
+
+	if [ "$BUILD_OPTION_L" = "y" ];then
+		make -j ARCH=arm CROSS_COMPILE64=$HOST_CROSS CFG_ARM64_core=y CFG_USER_TA_TARGETS=ta_arm64 all
+	elif [ "$BUILD_OPTION_L" = "f" ];then
+		echo "make -j ARCH=arm CROSS_COMPILE64=$HOST_CROSS CFG_ARM64_core=y CFG_USER_TA_TARGETS=ta_arm64 all1"
+		make -j ARCH=arm CROSS_COMPILE64=$HOST_CROSS CFG_ARM64_core=y CFG_USER_TA_TARGETS=ta_arm64 all 
+
+	else
+		make -j ARCH=arm CROSS_COMPILE64=$HOST_CROSS CFG_ARM64_core=y CFG_USER_TA_TARGETS=ta_arm64 all /dev/null
+		
+	fi
+
+	echo "build optee os over"
+
+	rm ../out/data/link -rf
+	mkdir -p ../out/data/link
+	cp -a out/arm-plat-phytium/export-ta_arm64 ../out/data/link
+
+
+	if [ -f "../out/tee-$PLATFORM-$PLATFORM_FLAVOR.bin" ];then
+		rm ../out/tee-$PLATFORM-$PLATFORM_FLAVOR.bin
+	fi
+	cp out/arm-plat-$PLATFORM/core/tee-pager_v2.bin ../out/tee-$PLATFORM-$PLATFORM_FLAVOR.bin
+}
+
+#main
+if [ "$1" = "e2000qdemo" ];then
+	PLATFORM_FLAVOR=e2000qdemo
+	PLATFORM=phytium
+elif [ "$1" = "e2000ddemo" ];then
+	PLATFORM_FLAVOR=e2000ddemo
+	PLATFORM=phytium
+elif [ "$1" = "phytiumpi" ];then
+	PLATFORM_FLAVOR=phytiumpi
+	PLATFORM=phytium
+elif [ "$1" = "rk3568" ];then
+	PLATFORM_FLAVOR=rk3568
+	PLATFORM=rockchip
+elif [ "$1" = "rk3588" ];then
+	PLATFORM_FLAVOR=rk3588
+	PLATFORM=rockchip
+elif [ "$1" = "rk3399" ];then
+	PLATFORM_FLAVOR=rk3399
+	PLATFORM=rockchip
+elif [ "$1" = "clean" ];then
+	rm -rf out
+	rm -f make.log
+	exit 0
+else
+	help
+	exit 0
+fi
+
+if [ "$2" = "d" ];then
+	BUILD_OPTION_D=y
+elif [ "$2" = "c" ];then
+	BUILD_OPTION_C=y
+elif [ "$2" = "l" ];then
+	BUILD_OPTION_L=y
+elif [ "$2" = "f" ];then
+	BUILD_OPTION_L=f
+else
+	build
+	exit 0
+fi
+
+if [ "$3" = "d" ];then
+	BUILD_OPTION_D=y
+elif [ "$3" = "c" ];then
+	BUILD_OPTION_C=y
+elif [ "$3" = "l" ];then
+	BUILD_OPTION_L=y
+elif [ "$3" = "f" ];then
+	BUILD_OPTION_L=f
+else
+	build
+	exit 0
+fi
+
+if [ "$4" = "d" ];then
+	BUILD_OPTION_D=y
+elif [ "$4" = "c" ];then
+	BUILD_OPTION_C=y
+elif [ "$4" = "l" ];then
+	BUILD_OPTION_L=y
+elif [ "$4" = "f" ];then
+	BUILD_OPTION_L=f
+else
+	build
+	exit 0
+fi
+
+build

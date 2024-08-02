@@ -254,4 +254,34 @@ FUNC thread_foreign_intr_exit , :
 	panic_at_smc_return
 END_FUNC thread_foreign_intr_exit
 
+FUNC thread_arm_smc_call , :
+    sub	sp, sp, #0x20
+    str	x0, [sp]            /* in */
+    str	x1, [sp, #0x8]      /* out */
+    str	x8, [sp, #0x10]     /* save tmp env */
+    ldr	x8, [sp]
+    ldr	x0, [x8]            /* in.a0 */
+    ldr	x1, [x8, #0x8]      /* in.a1 */
+    ldr	x2, [x8, #0x10]     /* in.a2 */
+    ldr	x3, [x8, #0x18]     /* in.a3 */
+    ldr	x4, [x8, #0x20]     /* in.a4 */
+    ldr	x5, [x8, #0x28]     /* in.a5 */
+    ldr	x6, [x8, #0x30]     /* in.a6 */
+    ldr	x7, [x8, #0x38]     /* in.a7 */
+    smc #0
+    ldr	x8, [sp, #0x8]
+    str	x0, [x8]            /* out.a0 */
+    str	x1, [x8, #0x8]      /* out.a1 */
+    str	x2, [x8, #0x10]     /* out.a2 */
+    str	x3, [x8, #0x18]     /* out.a3 */
+    str	x4, [x8, #0x20]     /* out.a4 */
+    str	x5, [x8, #0x28]     /* out.a5 */
+    str	x6, [x8, #0x30]     /* out.a6 */
+    str	x7, [x8, #0x38]     /* out.a7 */
+    nop
+    ldr	x8, [sp, #0x10]     /* load tmp env, x0&x1 not need */
+    add	sp, sp, #0x20
+    ret
+END_FUNC thread_arm_smc_call
+
 BTI(emit_aarch64_feature_1_and     GNU_PROPERTY_AARCH64_FEATURE_1_BTI)
